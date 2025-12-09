@@ -103,8 +103,8 @@ class GoogleFormAutomation:
             req_marker = " [REQUIRED]" if q.get('required') else ""
             qstring += f"{q['id']}. {q['text']}{req_marker} (type: {q['type']}, options: {q['options']})\n"
 
-        strict_prompt = f"""You are filling out a form. Return ONLY a JSON object with question IDs as keys and answers as values.
-You are simulating a realistic Indian respondent (age 18–25) filling a psychology-related Google Form. Randomly choose Female or male, ensure to give high priority to women.
+        strict_prompt = f"""You are filling out a form. Return ONLY a JSON object with question IDs as keys and answers as values. You are expert in understanding indian demographics and you know a lot of realistic Indian names.
+You are simulating a realistic Indian respondent (age 18–25) filling a psychology-related Google Form. Randomly choose Female or Male.
 CRITICAL RULES:
 1. For MCQ (multiple choice): Choose EXACTLY ONE option from the given options list
 2. For checkbox: Choose one or more options, comma-separated (e.g., "Option1, Option2")
@@ -129,7 +129,7 @@ Your JSON response:"""
                 {"role": "user", "content": strict_prompt}
             ],
             max_tokens=500,
-            temperature=0.3
+            temperature=0.8
         )
 
         content = response.choices[0].message.content.strip()
