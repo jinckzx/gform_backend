@@ -29,6 +29,16 @@ class GoogleFormAutomation:
     def setup_driver(self):
         options = webdriver.ChromeOptions()
         options.add_argument("--headless=new")
+        options.add_argument("--no-sandbox")  # Required for Docker
+        options.add_argument("--disable-dev-shm-usage")  # Overcome limited resource problems
+        options.add_argument("--disable-gpu")  # Disable GPU hardware acceleration
+        options.add_argument("--disable-software-rasterizer")
+        options.add_argument("--disable-extensions")
+        
+        # Specify chromium binary path (from Docker env)
+        options.binary_location = "/usr/bin/chromium"
+        
+        # Use the system chromedriver
         self.driver = webdriver.Chrome(options=options)
 
     def extract_questions(self):
