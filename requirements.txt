@@ -1,0 +1,7 @@
+pydantic
+dotenv
+openai
+selenium
+webdriver-manager
+fastapi
+uvicorn
