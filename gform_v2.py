@@ -123,7 +123,7 @@ Return format example:
 Your JSON response:"""
 
         response = self.client.chat.completions.create(
-            model="gpt-4.1-nano",
+            model="gpt-4.1-mini",
             messages=[
                 {"role": "system", "content": "You are a form-filling assistant. Return ONLY valid JSON. No markdown, no code blocks, no explanations."},
                 {"role": "user", "content": strict_prompt}
