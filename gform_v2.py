@@ -103,24 +103,38 @@ class GoogleFormAutomation:
             req_marker = " [REQUIRED]" if q.get('required') else ""
             qstring += f"{q['id']}. {q['text']}{req_marker} (type: {q['type']}, options: {q['options']})\n"
 
-        strict_prompt = f"""You are filling out a form. Return ONLY a JSON object with question IDs as keys and answers as values. You are expert in understanding indian demographics and you know a lot of realistic Indian names.
-You are simulating a realistic Indian respondent (age 18–25) filling a psychology-related Google Form. Randomly choose Female or Male.
+        strict_prompt = f"""
+You are filling out a Google Form. Return ONLY a JSON object with question IDs as keys and answers as values.
+
+You are simulating a realistic Indian respondent (age 18–25). 
+Randomly choose a gender (Male / Female) AND ensure the name matches the gender.  
+Names MUST be realistically Indian but **not overly common**.  
+You MUST NOT reuse names such as “Anjali Sharma”, “Rahul Kumar”, or similar stereotypical pairs.  
+Use names from diverse Indian regions (North, South, East, West) and vary caste/community patterns.
+
 CRITICAL RULES:
-1. For MCQ (multiple choice): Choose EXACTLY ONE option from the given options list
-2. For checkbox: Choose one or more options, comma-separated (e.g., "Option1, Option2")
-3. For scale_1_5: Choose a number from 1 to 5 (just the number, like "3")
-4. For short_text/long_text: Provide realistic text answers
-5. REQUIRED fields MUST be answered
-6. Return ONLY the JSON object, NO markdown, NO code blocks, NO explanation
-7. Make sure that only responds with YES, to "Do you agree to participate in this survey?" question always.
+1. For MCQ: Choose EXACTLY ONE option from the provided list.
+2. For checkbox: Choose one or more options, comma-separated.
+3. For scale_1_5: Choose a number from 1–5.
+4. For short_text/long_text: Provide realistic, concise answers suitable for a psychology survey.
+5. REQUIRED fields MUST be answered.
+6. If any question asks for **Name**, **Full Name**, or anything equivalent:
+   - Generate a unique, realistic Indian name.
+   - Avoid all of these common names: 
+     ["Anjali Sharma", "Anjali Singh", "Rahul Sharma", "Rahul Kumar", "Neha Singh", "Amit Kumar"].
+   - Use a different name each time this API is called.
+7. If any question asks “Do you agree to participate in this survey?”, ALWAYS answer "YES".
+8. Return ONLY a clean JSON object. No markdown, no commentary, no code blocks.
 
 Questions:
 {qstring}
 
 Return format example:
-{{"1": "answer1", "2": "answer2", "3": "answer3"}}
+{{"1": "answer1", "2": "answer2"}}
 
-Your JSON response:"""
+Your JSON response:
+"""
+
 
         response = self.client.chat.completions.create(
             model="gpt-4.1-mini",
