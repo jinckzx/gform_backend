@@ -2,7 +2,7 @@ import json
 import time
 import os
 from dotenv import load_dotenv
-
+import uuid
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -102,12 +102,18 @@ class GoogleFormAutomation:
         for q in question_list:
             req_marker = " [REQUIRED]" if q.get('required') else ""
             qstring += f"{q['id']}. {q['text']}{req_marker} (type: {q['type']}, options: {q['options']})\n"
+        
+        seed = str(uuid.uuid4())
 
         strict_prompt = f"""
+        RANDOMNESS SEED: {seed}
+        Use the seed to randomize gender and name selection.
+        If the seed ends in an EVEN digit → choose MALE.
+        If the seed ends in an ODD digit → choose FEMALE.
+
 You are filling out a Google Form. Return ONLY a JSON object with question IDs as keys and answers as values.
 
 You are simulating a realistic Indian respondent (age 18–25). 
-Randomly choose a gender (Male / Female) AND ensure the name matches the gender.  
 Names MUST be realistically Indian but **not overly common**.  
 You MUST NOT reuse names such as “Anjali Sharma”, “Rahul Kumar”, or similar stereotypical pairs.  
 Use names from diverse Indian regions (North, South, East, West) and vary caste/community patterns.
