@@ -47,7 +47,8 @@ def fill_google_form(req: FormRequest):
         return {
             "status": "success",
             "message": "Form filled and submitted successfully",
-            "answers": answers
+            "answers": answers,
+            "validation_errors": False
         }
 
     except Exception as e:

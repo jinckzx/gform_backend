@@ -1,4 +1,5 @@
 import json
+import random
 import time
 import os
 from dotenv import load_dotenv
@@ -103,13 +104,12 @@ class GoogleFormAutomation:
             req_marker = " [REQUIRED]" if q.get('required') else ""
             qstring += f"{q['id']}. {q['text']}{req_marker} (type: {q['type']}, options: {q['options']})\n"
         
-        seed = str(uuid.uuid4())
-
+        
+        s=[3,4,5,6,7,8,9,10,12,14]
+        seed= random.choice(s)
+       
         strict_prompt = f"""
-        RANDOMNESS SEED: {seed}
-        Use the seed to randomize gender and name selection.
-        If the seed ends in an EVEN digit → choose MALE.
-        If the seed ends in an ODD digit → choose FEMALE.
+        
 
 You are filling out a Google Form. Return ONLY a JSON object with question IDs as keys and answers as values.
 
@@ -119,6 +119,10 @@ You MUST NOT reuse names such as “Anjali Sharma”, “Rahul Kumar”, or simi
 Use names from diverse Indian regions (North, South, East, West) and vary caste/community patterns.
 
 CRITICAL RULES:
+RANDOMNESS SEED: {seed}
+        Use the seed to randomize gender and name selection.
+        If the seed ends in an EVEN digit → choose MALE.
+        If the seed ends in an ODD digit → choose FEMALE.
 1. For MCQ: Choose EXACTLY ONE option from the provided list.
 2. For checkbox: Choose one or more options, comma-separated.
 3. For scale_1_5: Choose a number from 1–5.
