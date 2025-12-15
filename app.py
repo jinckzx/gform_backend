@@ -25,7 +25,10 @@ class FormRequest(BaseModel):
     form_url: str
     headless: Optional[bool] = True
 
-
+class BatchFormRequest(BaseModel):
+    form_url: str
+    runs: int
+    headless: Optional[bool] = True
 @app.post("/fill-form/")
 def fill_google_form(req: FormRequest):
     """
@@ -57,3 +60,54 @@ def fill_google_form(req: FormRequest):
             "message": str(e),
             "answers": {}
         }
+@app.post("/fill-form/batch")
+def fill_google_form_batch(req: BatchFormRequest):
+    """
+    Fill & submit the same Google Form multiple times
+    with different GPT-generated responses.
+    """
+    if not req.form_url:
+        raise HTTPException(status_code=400, detail="Form URL is required")
+
+    if req.runs <= 0 or req.runs > 50:
+        raise HTTPException(
+            status_code=400,
+            detail="runs must be between 1 and 50"
+        )
+
+    results = []
+    successes = 0
+    failures = 0
+
+    for i in range(req.runs):
+        try:
+            bot = GoogleFormAutomation(
+                openai_api_key=OPENAI_API_KEY,
+                form_url=req.form_url
+            )
+
+            answers = bot.fill_form()
+
+            results.append({
+                "run": i + 1,
+                "status": "success",
+                "answers": answers
+            })
+            successes += 1
+
+        except Exception as e:
+            results.append({
+                "run": i + 1,
+                "status": "error",
+                "error": str(e)
+            })
+            failures += 1
+
+    return {
+        "status": "completed",
+        "total_runs": req.runs,
+        "successful_submissions": successes,
+        "failed_submissions": failures,
+        "results": results
+    }
+
