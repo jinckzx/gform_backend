@@ -26,7 +26,8 @@ class GoogleFormAutomation:
         self.client = OpenAI(api_key=openai_api_key)
         self.form_url = form_url
         self.driver = None
-
+        self.collected_answers = {}
+        self.first_page_answers = {}
     def setup_driver(self):
         options = webdriver.ChromeOptions()
         options.add_argument("--headless=new")
@@ -147,7 +148,7 @@ Your JSON response:
 
 
         response = self.client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model="gpt-4.1-nano",
             messages=[
                 {"role": "system", "content": "You are a form-filling assistant. Return ONLY valid JSON. No markdown, no code blocks, no explanations."},
                 {"role": "user", "content": strict_prompt}
@@ -306,6 +307,12 @@ Your JSON response:
             # 2. Get ALL answers with ONE GPT call
             logger.info("\nGetting AI answers...")
             answers = self.get_ai_answers_batch(questions)
+            # ✅ store ALL answers (internal use)
+            self.collected_answers.update(answers)
+
+            # ✅ store ONLY first page answers (for UI)
+            if page_num == 1:
+                self.first_page_answers = answers
 
             # 3. Fill the page
             logger.info("\nFilling form...")
@@ -395,6 +402,7 @@ Your JSON response:
                 break
 
         self.driver.quit()
+        return self.first_page_answers
 
 
 # Run
