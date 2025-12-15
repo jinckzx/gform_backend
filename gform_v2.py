@@ -28,6 +28,7 @@ class GoogleFormAutomation:
         self.driver = None
         self.collected_answers = {}
         self.first_page_answers = {}
+        self.seed = random.choice([3,4,5,6,7,8,9,10,12,14])
     def setup_driver(self):
         options = webdriver.ChromeOptions()
         options.add_argument("--headless=new")
@@ -106,8 +107,7 @@ class GoogleFormAutomation:
             qstring += f"{q['id']}. {q['text']}{req_marker} (type: {q['type']}, options: {q['options']})\n"
         
         
-        s=[3,4,5,6,7,8,9,10,12,14]
-        seed= random.choice(s)
+        
        
         strict_prompt = f"""
         
@@ -120,7 +120,7 @@ You MUST NOT reuse names such as “Anjali Sharma”, “Rahul Kumar”, or simi
 Use names from diverse Indian regions (North, South, East, West) and vary caste/community patterns.
 
 CRITICAL RULES:
-RANDOMNESS SEED: {seed}
+RANDOMNESS SEED: {self.seed}
         Use the seed to randomize gender and name selection.
         If the seed ends in an EVEN digit → choose MALE.
         If the seed ends in an ODD digit → choose FEMALE.
@@ -287,7 +287,9 @@ Your JSON response:
     def fill_form(self):
         self.setup_driver()
         self.driver.get(self.form_url)
-        time.sleep(2)
+        WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '[role="listitem"]'))
+        )
 
         page_num = 1
 
@@ -319,7 +321,7 @@ Your JSON response:
             self.fill_page(questions, answers)
 
             # Add a small delay after filling
-            time.sleep(1)
+            time.sleep(0.5)
 
             # 4. Check for validation errors BEFORE clicking next/submit
             self.check_validation_errors()
@@ -329,7 +331,11 @@ Your JSON response:
                 next_btn = self.driver.find_element(By.XPATH, "//span[text()='Next']/..")
                 logger.info("\n→ Clicking 'Next' button...")
                 next_btn.click()
-                time.sleep(2)
+                WebDriverWait(self.driver, 10).until(
+    EC.staleness_of(
+        self.driver.find_elements(By.CSS_SELECTOR, '[role="listitem"]')[0]
+    )
+)
                 page_num += 1
                 continue
             except:
@@ -362,7 +368,10 @@ Your JSON response:
                     logger.info("  (using JavaScript click)")
                     self.driver.execute_script("arguments[0].click();", submit_btn)
 
-                time.sleep(3)
+                WebDriverWait(self.driver, 10).until(
+    lambda d: d.current_url != url_before or "formResponse" in d.current_url
+)
+
 
                 # Check if URL changed (more reliable than text search)
                 url_after = self.driver.current_url
