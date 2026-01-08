@@ -284,6 +284,134 @@ Your JSON response:
             pass
         return False
 
+#     def fill_form(self):
+#         self.setup_driver()
+#         self.driver.get(self.form_url)
+#         WebDriverWait(self.driver, 10).until(
+#             EC.presence_of_element_located((By.CSS_SELECTOR, '[role="listitem"]'))
+#         )
+
+#         page_num = 1
+
+#         while True:
+#             logger.info(f"\n{'='*50}")
+#             logger.info(f"Processing Page {page_num}")
+#             logger.info(f"{'='*50}")
+            
+#             WebDriverWait(self.driver, 15).until(
+#                 EC.presence_of_element_located((By.CSS_SELECTOR, '[role="listitem"]'))
+#             )
+
+#             # 1. Extract all questions on the page
+#             questions = self.extract_questions()
+#             logger.info(f"\nFound {len(questions)} questions on this page")
+
+#             # 2. Get ALL answers with ONE GPT call
+#             logger.info("\nGetting AI answers...")
+#             answers = self.get_ai_answers_batch(questions)
+#             # ✅ store ALL answers (internal use)
+#             self.collected_answers.update(answers)
+
+#             # ✅ store ONLY first page answers (for UI)
+#             if page_num == 1:
+#                 self.first_page_answers = answers
+
+#             # 3. Fill the page
+#             logger.info("\nFilling form...")
+#             self.fill_page(questions, answers)
+
+#             # Add a small delay after filling
+#             time.sleep(0.5)
+
+#             # 4. Check for validation errors BEFORE clicking next/submit
+#             self.check_validation_errors()
+
+#             # 5. Try Next button
+#             try:
+#                 next_btn = self.driver.find_element(By.XPATH, "//span[text()='Next']/..")
+#                 logger.info("\n→ Clicking 'Next' button...")
+#                 next_btn.click()
+#                 WebDriverWait(self.driver, 10).until(
+#     EC.staleness_of(
+#         self.driver.find_elements(By.CSS_SELECTOR, '[role="listitem"]')[0]
+#     )
+# )
+#                 page_num += 1
+#                 continue
+#             except:
+#                 logger.info("\n→ No 'Next' button found, looking for 'Submit'...")
+#                 pass
+
+#             # 6. Try Submit button with better handling
+#             try:
+#                 # Find the submit button
+#                 submit_btn = WebDriverWait(self.driver, 10).until(
+#                     EC.element_to_be_clickable((
+#                         By.XPATH,
+#                         "//span[contains(text(), 'Submit')]"
+#                     ))
+#                 )
+
+#                 # Scroll into view
+#                 self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", submit_btn)
+#                 time.sleep(0.5)
+
+#                 # Get the current URL before clicking
+#                 url_before = self.driver.current_url
+#                 logger.info(f"\nURL before submit: {url_before}")
+
+#                 # Click using JavaScript as backup
+#                 logger.info("→ Clicking 'Submit' button...")
+#                 try:
+#                     submit_btn.click()
+#                 except:
+#                     logger.info("  (using JavaScript click)")
+#                     self.driver.execute_script("arguments[0].click();", submit_btn)
+
+#                 WebDriverWait(self.driver, 10).until(
+#     lambda d: d.current_url != url_before or "formResponse" in d.current_url
+# )
+
+
+#                 # Check if URL changed (more reliable than text search)
+#                 url_after = self.driver.current_url
+#                 logger.info(f"URL after submit: {url_after}")
+                
+#                 if url_after != url_before or "formResponse" in url_after:
+#                     logger.info("\n" + "="*50)
+#                     logger.info("✓ FORM SUBMITTED SUCCESSFULLY")
+#                     logger.info("="*50)
+#                     logger.info(f"Response URL: {url_after}")
+#                     break
+#                 else:
+#                     # Check for validation errors again
+#                     logger.info("\n" + "="*50)
+#                     logger.info("❌ SUBMISSION FAILED")
+#                     logger.info("="*50)
+                    
+#                     has_errors = self.check_validation_errors()
+                    
+#                     if not has_errors:
+#                         logger.info("No validation errors found - unknown issue")
+#                         logger.info(f"Current URL: {self.driver.current_url}")
+                    
+#                     # Save screenshot for debugging
+#                     screenshot_name = "submit_error.png"
+#                     self.driver.save_screenshot(screenshot_name)
+#                     logger.info(f"\nScreenshot saved as '{screenshot_name}'")
+#                     break
+
+#             except Exception as e:
+#                 logger.info("\n" + "="*50)
+#                 logger.info("❌ SUBMIT BUTTON ERROR")
+#                 logger.info("="*50)
+#                 logger.info(f"Error: {e}")
+#                 self.driver.save_screenshot("submit_error.png")
+#                 logger.info("Screenshot saved as 'submit_error.png'")
+#                 break
+
+#         self.driver.quit()
+#         return self.first_page_answers
     def fill_form(self):
         self.setup_driver()
         self.driver.get(self.form_url)
@@ -302,65 +430,91 @@ Your JSON response:
                 EC.presence_of_element_located((By.CSS_SELECTOR, '[role="listitem"]'))
             )
 
-            # 1. Extract all questions on the page
+            # Extract questions
             questions = self.extract_questions()
             logger.info(f"\nFound {len(questions)} questions on this page")
 
-            # 2. Get ALL answers with ONE GPT call
+            # Get answers
             logger.info("\nGetting AI answers...")
             answers = self.get_ai_answers_batch(questions)
-            # ✅ store ALL answers (internal use)
             self.collected_answers.update(answers)
 
-            # ✅ store ONLY first page answers (for UI)
             if page_num == 1:
                 self.first_page_answers = answers
 
-            # 3. Fill the page
+            # Fill the page
             logger.info("\nFilling form...")
             self.fill_page(questions, answers)
 
-            # Add a small delay after filling
-            time.sleep(0.5)
+            time.sleep(1)  # Give form time to process
 
-            # 4. Check for validation errors BEFORE clicking next/submit
-            self.check_validation_errors()
+            # ✅ FIXED: Check for validation errors BEFORE clicking next
+            has_errors = self.check_validation_errors()
+            if has_errors:
+                logger.info("\n❌ Cannot proceed - validation errors present")
+                self.driver.save_screenshot(f"validation_error_page_{page_num}.png")
+                break
 
-            # 5. Try Next button
+            # Try Next button with improved logic
             try:
+                # Store current URL to detect navigation
+                url_before = self.driver.current_url
+                
                 next_btn = self.driver.find_element(By.XPATH, "//span[text()='Next']/..")
                 logger.info("\n→ Clicking 'Next' button...")
-                next_btn.click()
-                WebDriverWait(self.driver, 10).until(
-    EC.staleness_of(
-        self.driver.find_elements(By.CSS_SELECTOR, '[role="listitem"]')[0]
-    )
-)
-                page_num += 1
-                continue
-            except:
-                logger.info("\n→ No 'Next' button found, looking for 'Submit'...")
+                
+                # Scroll to button
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", next_btn)
+                time.sleep(0.5)
+                
+                # Click
+                try:
+                    next_btn.click()
+                except:
+                    self.driver.execute_script("arguments[0].click();", next_btn)
+                
+                # ✅ FIXED: Better wait strategy
+                try:
+                    # Wait for either URL change OR new questions to load
+                    WebDriverWait(self.driver, 5).until(
+                        lambda d: d.current_url != url_before or 
+                                len(d.find_elements(By.CSS_SELECTOR, '[role="listitem"]')) != len(questions)
+                    )
+                    logger.info("✓ Successfully navigated to next page")
+                    page_num += 1
+                    time.sleep(1)  # Brief pause for stability
+                    continue
+                except:
+                    # If wait fails, check if we're still on same page with errors
+                    if self.check_validation_errors():
+                        logger.info("❌ Navigation blocked by validation errors")
+                        self.driver.save_screenshot(f"blocked_page_{page_num}.png")
+                        break
+                    else:
+                        # No errors but didn't navigate - might be last page
+                        logger.info("→ Navigation timeout - checking for Submit button...")
+                        pass
+                    
+            except Exception as e:
+                logger.info(f"→ No 'Next' button found: {e}")
                 pass
 
-            # 6. Try Submit button with better handling
+            # Try Submit button
             try:
-                # Find the submit button
-                submit_btn = WebDriverWait(self.driver, 10).until(
+                submit_btn = WebDriverWait(self.driver, 5).until(
                     EC.element_to_be_clickable((
                         By.XPATH,
-                        "//span[contains(text(), 'Submit')]"
+                        "//span[contains(text(), 'Submit')]/.."
                     ))
                 )
 
-                # Scroll into view
-                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", submit_btn)
-                time.sleep(0.5)
-
-                # Get the current URL before clicking
                 url_before = self.driver.current_url
                 logger.info(f"\nURL before submit: {url_before}")
 
-                # Click using JavaScript as backup
+                # Scroll and click
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", submit_btn)
+                time.sleep(0.5)
+
                 logger.info("→ Clicking 'Submit' button...")
                 try:
                     submit_btn.click()
@@ -368,51 +522,53 @@ Your JSON response:
                     logger.info("  (using JavaScript click)")
                     self.driver.execute_script("arguments[0].click();", submit_btn)
 
-                WebDriverWait(self.driver, 10).until(
-    lambda d: d.current_url != url_before or "formResponse" in d.current_url
-)
-
-
-                # Check if URL changed (more reliable than text search)
-                url_after = self.driver.current_url
-                logger.info(f"URL after submit: {url_after}")
-                
-                if url_after != url_before or "formResponse" in url_after:
-                    logger.info("\n" + "="*50)
-                    logger.info("✓ FORM SUBMITTED SUCCESSFULLY")
-                    logger.info("="*50)
-                    logger.info(f"Response URL: {url_after}")
-                    break
-                else:
-                    # Check for validation errors again
-                    logger.info("\n" + "="*50)
-                    logger.info("❌ SUBMISSION FAILED")
-                    logger.info("="*50)
+                # Wait for submission confirmation
+                try:
+                    WebDriverWait(self.driver, 10).until(
+                        lambda d: d.current_url != url_before or 
+                                "formResponse" in d.current_url or
+                                d.find_elements(By.XPATH, "//*[contains(text(), 'Your response has been recorded')]")
+                    )
                     
+                    url_after = self.driver.current_url
+                    logger.info(f"URL after submit: {url_after}")
+                    
+                    if url_after != url_before or "formResponse" in url_after:
+                        logger.info("\n" + "="*50)
+                        logger.info("✓ FORM SUBMITTED SUCCESSFULLY")
+                        logger.info("="*50)
+                        logger.info(f"Response URL: {url_after}")
+                        break
+                    else:
+                        raise Exception("Submission did not change URL")
+                        
+                except Exception as wait_err:
+                    logger.info(f"\n⚠️ Submission wait failed: {wait_err}")
                     has_errors = self.check_validation_errors()
                     
-                    if not has_errors:
-                        logger.info("No validation errors found - unknown issue")
-                        logger.info(f"Current URL: {self.driver.current_url}")
+                    if has_errors:
+                        logger.info("❌ SUBMISSION BLOCKED - Validation errors present")
+                    else:
+                        logger.info("❌ SUBMISSION FAILED - Unknown reason")
                     
-                    # Save screenshot for debugging
-                    screenshot_name = "submit_error.png"
-                    self.driver.save_screenshot(screenshot_name)
-                    logger.info(f"\nScreenshot saved as '{screenshot_name}'")
+                    self.driver.save_screenshot("submit_failure.png")
+                    # Save page source for debugging
+                    with open("submit_failure.html", "w", encoding="utf-8") as f:
+                        f.write(self.driver.page_source)
+                    logger.info("Saved screenshot and page source for debugging")
                     break
 
             except Exception as e:
                 logger.info("\n" + "="*50)
-                logger.info("❌ SUBMIT BUTTON ERROR")
+                logger.info("❌ SUBMIT BUTTON NOT FOUND")
                 logger.info("="*50)
                 logger.info(f"Error: {e}")
-                self.driver.save_screenshot("submit_error.png")
-                logger.info("Screenshot saved as 'submit_error.png'")
+                logger.info(f"Current URL: {self.driver.current_url}")
+                self.driver.save_screenshot("no_submit_button.png")
                 break
 
         self.driver.quit()
         return self.first_page_answers
-
 
 # Run
 if __name__ == "__main__":
