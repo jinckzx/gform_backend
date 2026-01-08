@@ -114,7 +114,7 @@ class GoogleFormAutomation:
 
 You are filling out a Google Form. Return ONLY a JSON object with question IDs as keys and answers as values.
 
-You are simulating a realistic Indian respondent (age 18–25). 
+You are simulating a realistic Indian respondent (age 18–25). Choose the AGE RANDOMLY between 18 to 20.
 Names MUST be realistically Indian but **not overly common**.  
 You MUST NOT reuse names such as “Anjali Sharma”, “Rahul Kumar”, or similar stereotypical pairs.  
 Use names from diverse Indian regions (North, South, East, West) and vary caste/community patterns.
@@ -124,6 +124,7 @@ RANDOMNESS SEED: {self.seed}
         Use the seed to randomize gender and name selection.
         If the seed ends in an EVEN digit → choose MALE.
         If the seed ends in an ODD digit → choose FEMALE.
+        
 1. For MCQ: Choose EXACTLY ONE option from the provided list.
 2. For checkbox: Choose one or more options, comma-separated.
 3. For scale_1_5: Choose a number from 1–5.
